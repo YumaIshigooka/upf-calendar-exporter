@@ -9,6 +9,17 @@ HOW TO EXECUTE
 
 Git clone the project and execute main.py
 
+Dependencies:
+* datetime
+* typing
+* bs4
+* requests
+
+To install dependencies type:
+```
+pip install <package>
+```
+
 if having problems when executing in Apple devices, refer to https://github.com/miquelvir/upf-calendar-exporter/issues/1
 
 ***
