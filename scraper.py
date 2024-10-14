@@ -23,7 +23,7 @@ def request_calendar(jsessionid: str, start: str, end: str) -> List[dict]:
     :return: list of dicts, each dict representing an event
     """
     session = Session()
-
+    
     response = session.post(
         url=AJAX_REQUEST_URL.format(start, end),
         headers={
@@ -40,8 +40,10 @@ def request_calendar(jsessionid: str, start: str, end: str) -> List[dict]:
             "X-Requested-With": "XMLHttpRequest"
         }
     )
-
-    return json.loads(response.text)
+    try:
+        return json.loads(response.text)
+    except:
+        return None
 
 
 def clean_received_sessions(data: List[dict]) -> None:
