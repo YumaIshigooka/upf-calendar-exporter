@@ -14,6 +14,8 @@ DEPENDENCIES:
 * typing
 * bs4
 * requests
+* tkcalendar
+* customtkinter
 
 To install dependencies type:
 ```
