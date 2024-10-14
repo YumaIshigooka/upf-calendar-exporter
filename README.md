@@ -9,7 +9,7 @@ HOW TO EXECUTE
 
 Git clone the project and execute main.py
 
-Dependencies:
+DEPENDENCIES:
 * datetime
 * typing
 * bs4
