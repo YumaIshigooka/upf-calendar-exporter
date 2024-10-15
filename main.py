@@ -15,6 +15,8 @@ customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("dark-blue")
 
 current_frame = 0
+start_cal = None
+end_cal = None
 
 def launch_campus_global():
     webbrowser.open(URL_CAMPUS_GLOBAL, new=2)  # 2 requires new tab
@@ -110,8 +112,9 @@ def process_gui(jsessionid: str, first_date: datetime, last_date: datetime, savi
     step4.pack(pady=12, padx=10)
     border_color = "#FFCC70"
     border_width = 2
+    hover_color="#3b2f19"
     button_google_calendar = customtkinter.CTkButton(master = frame, text = "Open Google Calendar", font=("Calibri", 24), width=250, height=50, 
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
                                              command=launch_google_calendar)
     button_google_calendar.pack(pady=20, padx=10)
 
@@ -137,8 +140,7 @@ def show_troubleshooting_steps() -> None:
 def login(content):
     print(content)
 
-def next_frame(frames, b_next, b_prev):
-    b_prev.grid(row=0,column=0, padx=10)
+def next_frame(frames, b_next, b_prev, progress_bar):
     global current_frame
     if (current_frame + 1 != len(frames)):
         frames[current_frame].pack_forget()
@@ -146,10 +148,16 @@ def next_frame(frames, b_next, b_prev):
         frames[current_frame].pack(expand=True)
         if (current_frame +1 == len(frames)):
             b_next.grid_forget()
-    print(current_frame)
+            progress_bar.grid(row=1, column = 0, columnspan=1, pady=12)
+            b_prev.grid(row=0,column=0, padx=10)
+        else:
+            b_next.grid_forget()
+            b_next.grid(row=0,column=1, padx=10)
+            progress_bar.grid(row=1, column = 0, columnspan=2)
+            b_prev.grid(row=0,column=0, padx=10)
+    progress_bar.set((current_frame+1)/len(frames))
 
-def prev_frame(frames, b_next, b_prev):
-    b_next.grid(row=0,column=1, padx=10)
+def prev_frame(frames, b_next, b_prev, progress_bar):
     global current_frame
     if (current_frame - 1 != -1):
         frames[current_frame].pack_forget()
@@ -157,7 +165,12 @@ def prev_frame(frames, b_next, b_prev):
         frames[current_frame].pack(expand=True) 
         if (current_frame - 1 == -1):
             b_prev.grid_forget()
-    print(current_frame)
+            b_next.grid(row=0,column=0, padx=10)
+            progress_bar.grid(row=1, column = 0, columnspan=1, pady=12)
+        else:
+            progress_bar.grid(row=1, column = 0, columnspan=2, pady=12)
+            b_next.grid(row=0,column=1, padx=10)
+    progress_bar.set((current_frame+1)/len(frames))
 
 
 def frame_start(welcome, frame, bottom_frame):
@@ -165,11 +178,22 @@ def frame_start(welcome, frame, bottom_frame):
     frame.pack(expand=True)
     bottom_frame.pack(side="bottom", pady=10)
 
-    
+def set_end_date(self):
+    global start_cal
+    global end_cal
+    end_cal.configure(mindate=datetime.strptime(start_cal.get_date(), "%Y-%m-%d"))
+
+def set_start_date(self):
+    global start_cal
+    global end_cal
+    start_cal.configure(maxdate=datetime.strptime(end_cal.get_date(), "%Y-%m-%d"))
+
 
 def frame_config(root, app):
     border_color = "#FFCC70"
+    select_color = "#785f32"
     border_width = 2
+    hover_color="#3b2f19"
 
     bottom_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
 
@@ -185,15 +209,18 @@ def frame_config(root, app):
 
     frames = [frame_intro, frame_sessionID, frame_dates, frame_directory, frame_confirm]
 
+    progress_bar = customtkinter.CTkProgressBar(master = bottom_frame, progress_color=border_color, width=60)
+
     b_prev = customtkinter.CTkButton(master = bottom_frame, text = " < Previous ", width=90,
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
-                                             command=lambda: prev_frame(frames, b_next, b_prev))
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
+                                             command=lambda: prev_frame(frames, b_next, b_prev, progress_bar))
 
     b_next = customtkinter.CTkButton(master = bottom_frame, text = " Next > ", width=90,
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
-                                             command=lambda: next_frame(frames, b_next, b_prev))
-
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
+                                             command=lambda: next_frame(frames, b_next, b_prev, progress_bar))
     b_next.grid(row=0,column=1, padx=10)
+    progress_bar.grid(row=1, column = 1, pady=12)
+    progress_bar.set(1/len(frames))
 
 
     frame_welcome.pack(expand=True)
@@ -204,7 +231,7 @@ def frame_config(root, app):
     welcome.pack(pady=20, padx=10)
 
     start = customtkinter.CTkButton(master = frame_welcome, text = "Start", font=("Calibri", 40), width=200, height=100, 
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
                                              command= lambda: frame_start(frame_welcome, frame_intro, bottom_frame))
     start.pack(pady=10, padx=10)
 
@@ -213,13 +240,22 @@ def frame_config(root, app):
 
 
 
-    login_desc = customtkinter.CTkLabel(master=frame_intro, text="Start by logging in to Secretaria Virtual\nThen click \"Horaris de Classe\"\nThen click \"Veure Calendari\"", font=("Calibri", 24))
+    login_desc = customtkinter.CTkLabel(master=frame_intro, text="Start by logging in to Secretaria Virtual", font=("Calibri", 24))
     login_desc.pack(pady=12, padx=10)
 
     open_secretaria = customtkinter.CTkButton(master = frame_intro, text = "Open Secretaria Virtual", font=("Calibri", 16), width=220, height=40, 
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
                                              command=launch_campus_global)
     open_secretaria.pack(pady=20, padx=10)
+
+    subframe_login = customtkinter.CTkFrame(master=frame_intro, fg_color="transparent", border_width=2, height=150)
+    subframe_login.pack(pady=20, padx=10)
+
+    login_subdesc = customtkinter.CTkLabel(master=subframe_login, text=" * Click \"Class Schedules\"", font=("Calibri", 16))
+    login_subdesc.pack(pady=0, padx=10)
+
+    login_subdesc2 = customtkinter.CTkLabel(master=subframe_login, text=" * Click \"Show Calendar\"  ", font=("Calibri", 16))
+    login_subdesc2.pack(pady=0, padx=10)
 
     _sessionID_title = customtkinter.CTkLabel(master=frame_sessionID, text="Now paste here the JSESSIONID", font=("Calibri", 24))
     _sessionID_title.pack(pady=titlepady, padx=10)
@@ -230,7 +266,7 @@ def frame_config(root, app):
     jsession_title = customtkinter.CTkLabel(master=frame_sessionID, text="You can find the JSESSIONID doing the following steps:", font=("Calibri", 20))
     jsession_title.pack(pady=4, padx=10)
 
-    tabs = customtkinter.CTkTabview(master=frame_sessionID, border_width=2, height=120)
+    tabs = customtkinter.CTkTabview(master=frame_sessionID, border_width=2, height=120, segmented_button_selected_color=select_color, segmented_button_selected_hover_color=hover_color)
     tabs.pack(pady=0, padx=10)
 
     tabs.add("Chrome")
@@ -250,14 +286,21 @@ def frame_config(root, app):
     _dates_select_end = customtkinter.CTkLabel(master=frame_dates, text="Select the end date", font=("Calibri", 16))
     _dates_select_end.grid(row= 3,column=1,columnspan=1, pady=0, padx=10)
 
+    global start_cal
+    global end_cal
+
     start_cal = Calendar(master=frame_dates, selectmode='day', font=("Calibri", 10),
                         showweeknumbers=False, cursor="hand2", date_pattern= 'y-mm-dd',
-                        borderwidth=0, bordercolor='white')
+                        borderwidth=0, bordercolor='white', selectbackground=select_color, disableddaybackground="#6e6e6e")
     start_cal.grid(row= 4,column=0, pady=12, padx=10)
-    end_cal = Calendar(master=frame_dates, selectmode='day', font=("Calibri", 10),
+    end_cal = Calendar(master=frame_dates, mindate=datetime.strptime(start_cal.get_date(), "%Y-%m-%d"), selectmode='day', font=("Calibri", 10),
                         showweeknumbers=False, cursor="hand2", date_pattern= 'y-mm-dd',
-                        borderwidth=0, bordercolor='white')
+                        borderwidth=0, bordercolor='white', selectbackground=select_color, disableddaybackground="#6e6e6e")
     end_cal.grid(row= 4,column=1, pady=12, padx=10)
+    start_cal.configure(maxdate=datetime.strptime(end_cal.get_date(), "%Y-%m-%d"))
+    
+    start_cal.bind("<<CalendarSelected>>", set_end_date)
+    end_cal.bind("<<CalendarSelected>>", set_start_date)
 
     _directory_blank = customtkinter.CTkLabel(master=frame_directory, text="", font=("Calibri", 3))
     _directory_blank.pack(pady=0, padx=10)
@@ -279,11 +322,11 @@ def frame_config(root, app):
     confirm_text.pack(pady=0, padx=10)
 
     confirm = customtkinter.CTkButton(master = frame_confirm, text = "Confirm", font=("Calibri", 40), width=200, height=100, 
-                                             border_color = border_color, border_width=border_width, fg_color="transparent",
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
                                              command= lambda: process_gui(_JSESSIONID.get(), 
                                                                       datetime.strptime(start_cal.get_date(), "%Y-%m-%d"), 
                                                                       datetime.strptime(end_cal.get_date(), "%Y-%m-%d"), 
-                                                                      _directory_ask.get(), _directory_separated.get(), frame_result, [bottom_frame, frame_confirm]))
+                                                                      "./" + _directory_ask.get(), _directory_separated.get(), frame_result, [bottom_frame, frame_confirm]))
     confirm.pack(pady=30, padx=10)
 
 
