@@ -6,6 +6,7 @@ from utils import *
 from datetime import datetime
 from typing import Tuple
 from tkcalendar import Calendar 
+from tkinter import filedialog
 
 URL_CAMPUS_GLOBAL = "https://secretariavirtual.upf.edu/"
 URL_IMPORT_CALENDAR = "https://calendar.google.com/calendar/r/settings/export"
@@ -81,20 +82,40 @@ def process(jsessionid: str, first_date: datetime, last_date: datetime, saving_p
 
     return status
 
-def process_gui(jsessionid: str, first_date: datetime, last_date: datetime, saving_path: str, separate: bool, frame, deleteframe) -> bool:
-    for delete in deleteframe:
-        delete.pack_forget()
-    
-    frame.pack(expand=True)
+def go_back(frame, frames, b_next, b_prev, progressbar, elems):
+    for e in elems:
+        e.pack_forget()
+    frame.pack_forget()
+    frames[1][current_frame].pack(expand=True)
+    frames[0].pack(side="bottom", pady=10)
+    while (current_frame > 0):
+        prev_frame(frames[1], b_next, b_prev, progressbar)
 
+def close(root):
+    root.destroy()
+
+def process_gui(jsessionid: str, first_date: datetime, last_date: datetime, saving_path: str, separate: bool, frame, frames, b_next, b_prev, progressbar, root) -> bool:
+    global current_frame
+    frame.pack(expand=True)
+    frames[1][current_frame].pack_forget()
+    frames[0].pack_forget()
+    if saving_path == "":
+        saving_path = "calendar"
+    border_color = "#FFCC70"
+    border_width = 2
+    hover_color="#3b2f19"
     steps = customtkinter.CTkLabel(master=frame, text="Posting AJAX Request...", font=("Calibri", 24))
     steps.pack(pady=12, padx=10)
     data = request_calendar(jsessionid, str(int(first_date.timestamp())), str(int(last_date.timestamp())))
     if (data == None):
         stepf = customtkinter.CTkLabel(master=frame, text="Request failed!", font=("Calibri", 24))
         stepf.pack(pady=12, padx=10)
-        stepf = customtkinter.CTkLabel(master=frame, text="Check your internet connection, or if you properly copied your JSESSIONID", font=("Calibri", 16))
-        stepf.pack(pady=0, padx=10)
+        stepf2 = customtkinter.CTkLabel(master=frame, text="Check your internet connection, or if you properly copied your JSESSIONID", font=("Calibri", 16))
+        stepf2.pack(pady=0, padx=10)
+        back_button = customtkinter.CTkButton(master = frame, text = "Back", font=("Calibri", 16), width=100, height=30, 
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
+                                             command=lambda: go_back(frame, frames, b_next, b_prev, progressbar, [stepf, stepf2, steps, back_button]))
+        back_button.pack(pady=20, padx=10)
         return
     print_progress_bar(1, 3)
 
@@ -110,13 +131,18 @@ def process_gui(jsessionid: str, first_date: datetime, last_date: datetime, savi
     steps.pack_forget()
     step4 = customtkinter.CTkLabel(master=frame, text="Task finished!", font=("Calibri", 40))
     step4.pack(pady=12, padx=10)
-    border_color = "#FFCC70"
-    border_width = 2
-    hover_color="#3b2f19"
+
     button_google_calendar = customtkinter.CTkButton(master = frame, text = "Open Google Calendar", font=("Calibri", 24), width=250, height=50, 
                                              border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
                                              command=launch_google_calendar)
     button_google_calendar.pack(pady=20, padx=10)
+
+    button_close = customtkinter.CTkButton(master = frame, text = "Close", font=("Calibri", 16), width=150, height=30, 
+                                        border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color,
+                                        command=lambda:close(root))
+    button_close.pack(pady=20, padx=10)
+
+    
 
     return status
 
@@ -266,16 +292,16 @@ def frame_config(root, app):
     jsession_title = customtkinter.CTkLabel(master=frame_sessionID, text="You can find the JSESSIONID doing the following steps:", font=("Calibri", 20))
     jsession_title.pack(pady=4, padx=10)
 
-    tabs = customtkinter.CTkTabview(master=frame_sessionID, border_width=2, height=120, segmented_button_selected_color=select_color, segmented_button_selected_hover_color=hover_color)
+    tabs = customtkinter.CTkTabview(master=frame_sessionID, border_width=2, height=130, segmented_button_selected_color=select_color, segmented_button_selected_hover_color=hover_color)
     tabs.pack(pady=0, padx=10)
 
     tabs.add("Chrome")
     tabs.add("Firefox")
 
     jsession_desc_chrome = customtkinter.CTkLabel(master=tabs.tab("Chrome"), text="Right click and select Inspect\nSelect the Application tab\nExpand the Cookies tab", font=("Calibri", 16))
-    jsession_desc_chrome.pack(pady=0, padx=0)
+    jsession_desc_chrome.pack(pady=8, padx=0)
 
-    jsession_desc_firefox = customtkinter.CTkLabel(master=tabs.tab("Firefox"), text="Right click and select Inspect Element\nSelect the Storage tab\nExpand the Cookies tab", font=("Calibri", 16))
+    jsession_desc_firefox = customtkinter.CTkLabel(master=tabs.tab("Firefox"), text="Right click and select Inspect Element\nSelect the Storage tab\nExpand the Cookies tab\nCopy the second JSESSIONID (/pds)", font=("Calibri", 16))
     jsession_desc_firefox.pack(pady=0, padx=0)
 
     _dates_desc = customtkinter.CTkLabel(master=frame_dates, text="Select the desired dates to export", font=("Calibri", 24))
@@ -308,8 +334,19 @@ def frame_config(root, app):
     _directory_desc = customtkinter.CTkLabel(master=frame_directory, text="To which directory do you want to export?", font=("Calibri", 24))
     _directory_desc.pack(pady=3, padx=10)
 
-    _directory_ask = customtkinter.CTkEntry(master=frame_directory, placeholder_text="leave empty to generate in this folder", width=400)
+    _directory_ask = customtkinter.CTkEntry(master=frame_directory, placeholder_text="leave empty to export in the project folder", width=400)
     _directory_ask.pack(pady=3, padx=10)
+
+    def select_directory():
+        selected_directory = filedialog.askdirectory()
+        if selected_directory:  # Check if a directory was selected
+            _directory_ask.delete(0, customtkinter.END)  # Clear the entry field
+            _directory_ask.insert(0, selected_directory + "/calendar")  # Insert the selected directory
+
+    _directory_button = customtkinter.CTkButton(master=frame_directory, font=("Calibri", 16), width=150, height=30, 
+                                             border_color = border_color, border_width=border_width, fg_color="transparent", hover_color=hover_color, 
+                                             text="Select Directory", command=select_directory)
+    _directory_button.pack(pady=10)
 
 
     _directory_separated = customtkinter.CTkCheckBox(master=frame_directory, text="Do you want to export the subjects into different files?",  font=("Calibri", 16), checkmark_color="#000000", fg_color=border_color)
@@ -326,10 +363,8 @@ def frame_config(root, app):
                                              command= lambda: process_gui(_JSESSIONID.get(), 
                                                                       datetime.strptime(start_cal.get_date(), "%Y-%m-%d"), 
                                                                       datetime.strptime(end_cal.get_date(), "%Y-%m-%d"), 
-                                                                      "./" + _directory_ask.get(), _directory_separated.get(), frame_result, [bottom_frame, frame_confirm]))
+                                                                      _directory_ask.get(), _directory_separated.get(), frame_result, [bottom_frame, frames], b_next, b_prev, progress_bar, app))
     confirm.pack(pady=30, padx=10)
-
-
     
 
 
