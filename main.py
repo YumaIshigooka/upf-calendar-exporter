@@ -376,7 +376,7 @@ def frame_config(root, app):
     _directory_separated = customtkinter.CTkCheckBox(master=frame_directory, text="Do you want to export the subjects into different files?",  font=("Calibri", 16), checkmark_color="#000000", fg_color=border_color)
     _directory_separated.pack(pady=28, padx=10)
     
-    confirm_text = customtkinter.CTkLabel(master=frame_confirm, text="Click continue to create the calendar", font=("Calibri", 24))
+    confirm_text = customtkinter.CTkLabel(master=frame_confirm, text="Click Confirm to create the calendar", font=("Calibri", 24))
     confirm_text.pack(pady=0, padx=10)
 
     confirm_text = customtkinter.CTkLabel(master=frame_confirm, text="Click previous to re-check if everything is correct", font=("Calibri", 16))
