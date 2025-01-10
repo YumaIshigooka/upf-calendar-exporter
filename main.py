@@ -128,6 +128,16 @@ def process_gui(jsessionid: str, first_date: datetime, last_date: datetime, savi
     status = export_calendar(data, saving_path, separate)
     print_progress_bar(3, 3)
 
+    def save_jsessionid_to_file(filepath, jsessionid):
+        try:
+            with open(filepath, 'w') as file:
+                file.write(jsessionid)
+        except Exception as e:
+            print(f"Error saving JSESSIONID: {e}")
+    
+    jsessionid_file = "./data/JSESSIONID"
+    save_jsessionid_to_file(jsessionid_file, jsessionid)
+
     steps.pack_forget()
     step4 = customtkinter.CTkLabel(master=frame, text="Task finished!", font=("Calibri", 40))
     step4.pack(pady=12, padx=10)
@@ -286,8 +296,22 @@ def frame_config(root, app):
     _sessionID_title = customtkinter.CTkLabel(master=frame_sessionID, text="Now paste here the JSESSIONID", font=("Calibri", 24))
     _sessionID_title.pack(pady=titlepady, padx=10)
     
+    def get_jsessionid_from_file(filepath):
+        try:
+            with open(filepath, 'r') as file:
+                return file.read().strip()
+        except FileNotFoundError:
+            return ""
+        
+    jsessionid_file = "./data/JSESSIONID"
+    jsessionid_content = get_jsessionid_from_file(jsessionid_file)
+
     _JSESSIONID = customtkinter.CTkEntry(master=frame_sessionID, placeholder_text="JSESSIONID", width=400)
+    if jsessionid_content:
+        _JSESSIONID.insert(0, jsessionid_content)
     _JSESSIONID.pack(pady=12, padx=10)
+
+
 
     jsession_title = customtkinter.CTkLabel(master=frame_sessionID, text="You can find the JSESSIONID doing the following steps:", font=("Calibri", 20))
     jsession_title.pack(pady=4, padx=10)
